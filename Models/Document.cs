@@ -1,3 +1,4 @@
+using System;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -7,15 +8,15 @@ namespace telstra.demo.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.String)]
-        ObjectId Id { get; set; }
+        Guid Id { get; set; }
 
-        string InternalId { get; }
+        [BsonRepresentation(BsonType.String)]
+        Guid Version { get; set; }
     }
 
     public abstract class Document : IDocument
     {
-        public ObjectId Id { get; set; }
-
-        public string InternalId => Id.ToString();
+        public Guid Id { get; set; }
+        public Guid Version { get; set; }
     }
 }

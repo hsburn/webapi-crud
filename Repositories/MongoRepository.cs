@@ -25,21 +25,25 @@ namespace telstra.demo.Repositories
                 .FirstOrDefault())?.CollectionName;
         }
 
-        public Task DeleteById(string id)
+        public Task<DeleteResult> DeleteById(string id)
         {
-            var objectId = new ObjectId(id);
+            var objectId = new Guid(id);
             var filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, objectId);
-            return collection.FindOneAndDeleteAsync(filter);
+            return collection.DeleteOneAsync(filter);
         }
 
-        public async Task<IEnumerable<TDocument>> List()
+        public async Task<IEnumerable<TDocument>> List(Pagination pagination)
         {
-            return await collection.Find(doc => true).ToListAsync();
+            return await collection
+                .Find(doc => true)
+                .Skip((pagination.PageNumber - 1) * pagination.PageSize)
+                .Limit(pagination.PageSize)
+                .ToListAsync();
         }
 
         public Task<TDocument> GetById(string id)
         {
-            var objectId = new ObjectId(id);
+            var objectId = new Guid(id);
             var filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, objectId);
             return collection.Find(filter).FirstOrDefaultAsync();
         }
@@ -49,12 +53,16 @@ namespace telstra.demo.Repositories
             return collection.InsertOneAsync(document);
         }
 
-        public Task Update(string id, TDocument document)
+        public Task Update(string id, string version, TDocument document)
         {
-            var objectId = new ObjectId(id);
-            document.Id = objectId;
+            document.Id = new Guid(id);
+            document.Version = Guid.NewGuid();
 
-            var filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, objectId);
+            var filter = Builders<TDocument>.Filter.And(
+                Builders<TDocument>.Filter.Eq(doc => doc.Id, new Guid(id)),
+                Builders<TDocument>.Filter.Eq(doc => doc.Version, new Guid(version))
+            );
+
             return collection.FindOneAndReplaceAsync(filter, document);
         }
     }
